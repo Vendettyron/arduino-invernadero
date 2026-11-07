@@ -1,4 +1,4 @@
-"""Módulo receptor que escucha las lecturas enviadas por Arduino vía Serial y las guarda en el CSV con fecha y hora actual."""
+"""Módulo receptor que escucha las lecturas de temperatura y humedad enviadas por Arduino vía Serial y las guarda en el CSV."""
 
 from __future__ import annotations
 
@@ -15,23 +15,52 @@ from configuracion_serial import (
     TIMEOUT_SERIAL_SEGUNDOS,
     VELOCIDAD_BAUDIOS,
 )
-from gestor_csv import asegurar_archivo_csv_con_encabezados, registrar_lectura_temperatura
+from gestor_csv import asegurar_archivo_csv_con_encabezados, registrar_lectura_invernadero
 
-# Expresión regular para extraer números flotantes de líneas como "TEMP:24.50" o "24.50"
-PATRON_TEMPERATURA = re.compile(r"TEMP:?\s*([+-]?\d+(?:\.\d+)?)")
+# Expresiones regulares compatibles tanto con el mensaje descriptivo de Arduino
+# ("... es de 24.50 C y la humedad esta en: 65.00 %") como con el formato corto ("TEMP:24.50|HUM:65.00")
+PATRON_TEMPERATURA = re.compile(r"(?:es de|TEMP:?)\s*([+-]?\d+(?:\.\d+)?)", re.IGNORECASE)
+PATRON_HUMEDAD = re.compile(r"(?:humedad esta en:|humedad está en:|HUM:?)\s*([+-]?\d+(?:\.\d+)?)", re.IGNORECASE)
 
 
-def extraer_temperatura(linea_texto: str) -> float | None:
-    """Extrae el valor numérico de la temperatura a partir del mensaje recibido."""
-    coincidencia = PATRON_TEMPERATURA.search(linea_texto)
-    if coincidencia:
-        return float(coincidencia.group(1))
+def extraer_datos_ambientales(linea_texto: str) -> tuple[float, float] | None:
+    """Extrae la tupla (temperatura_celsius, humedad_porcentaje) a partir del mensaje serial."""
+    coincidencia_temp = PATRON_TEMPERATURA.search(linea_texto)
+    coincidencia_hum = PATRON_HUMEDAD.search(linea_texto)
 
-    # Intento de parseo directo si Arduino solo envió el número
-    try:
-        return float(linea_texto.strip())
-    except ValueError:
-        return None
+    if coincidencia_temp and coincidencia_hum:
+        return float(coincidencia_temp.group(1)), float(coincidencia_hum.group(1))
+
+    if coincidencia_temp:
+        return float(coincidencia_temp.group(1)), 0.0
+
+    return None
+
+
+def formatear_mensaje_log(
+    dia_semana: str,
+    hora_am_pm: str,
+    temperatura_celsius: float,
+    humedad_porcentaje: float,
+) -> str:
+    """Construye el mensaje semántico de salida para el registro en consola."""
+    return (
+        f"La temperatura el día {dia_semana} a las {hora_am_pm} "
+        f"es de {temperatura_celsius:.2f} °C y la humedad está en: {humedad_porcentaje:.2f} %"
+    )
+
+
+def abrir_conexion_serial(
+    puerto_o_url: str,
+    baudios: int,
+    timeout: float,
+) -> serial.SerialBase:
+    """Abre una conexión serial tanto para URLs virtuales (Wokwi rfc2217://) como puertos USB físicos."""
+    return serial.serial_for_url(
+        url=puerto_o_url,
+        baudrate=baudios,
+        timeout=timeout,
+    )
 
 
 def iniciar_escucha_serial(
@@ -39,41 +68,56 @@ def iniciar_escucha_serial(
     baudios: int = VELOCIDAD_BAUDIOS,
     timeout: float = TIMEOUT_SERIAL_SEGUNDOS,
 ) -> None:
-    """Abre la conexión serial y registra cada temperatura entrante en el archivo CSV."""
+    """Abre la conexión serial y registra cada lectura de temperatura y humedad en el archivo CSV."""
     asegurar_archivo_csv_con_encabezados(RUTA_ARCHIVO_CSV)
 
-    print(f"Conectando al puerto {puerto} a {baudios} baudios...")
+    print(f"Conectando a '{puerto}' ({baudios} baudios)...")
     try:
-        conexion = serial.Serial(port=puerto, baudrate=baudios, timeout=timeout)
+        conexion = abrir_conexion_serial(puerto_o_url=puerto, baudios=baudios, timeout=timeout)
     except serial.SerialException as error:
-        print(f"Error al conectar con Arduino: {error}")
-        print("Sugerencia: Revisa en 'configuracion_serial.py' si el nombre del puerto es el correcto.")
+        print(f"\nError al conectar con Arduino/Wokwi: {error}")
+        print(
+            "Sugerencia:\n"
+            "  1. Si usas Wokwi, asegúrate de que la simulación esté en ejecución (Play) en VS Code.\n"
+            "  2. Si usas un Arduino físico, actualiza PUERTO_SERIAL_ARDUINO en 'configuracion_serial.py'."
+        )
         sys.exit(1)
 
-    print("Conexión serial establecida. Esperando lecturas del sensor...")
+    print("Conexión establecida. Esperando lecturas del sensor DHT...")
     print("Presiona Ctrl+C para detener la captura.\n")
 
-    # Esperamos a que Arduino termine de reiniciar tras abrir el puerto
-    time.sleep(2.0)
+    time.sleep(1.0)
 
     try:
         while True:
             linea_cruda = conexion.readline().decode("utf-8", errors="ignore").strip()
-            if not linea_cruda or linea_cruda.startswith("#"):
-                if linea_cruda:
-                    print(f"[Arduino Info]: {linea_cruda}")
+            if not linea_cruda:
                 continue
 
-            temperatura = extraer_temperatura(linea_cruda)
-            if temperatura is not None:
+            if linea_cruda.startswith("#"):
+                print(f"[Info Arduino]: {linea_cruda}")
+                continue
+
+            lectura = extraer_datos_ambientales(linea_cruda)
+            if lectura is not None:
+                temperatura, humedad = lectura
                 ahora = datetime.now()
-                registrar_lectura_temperatura(
+                registrar_lectura_invernadero(
                     temperatura_celsius=temperatura,
+                    humedad_porcentaje=humedad,
                     momento_lectura=ahora,
                     ruta_csv=RUTA_ARCHIVO_CSV,
                 )
                 dia_nombre = NOMBRES_DIAS_SEMANA.get(ahora.weekday(), "")
-                print(f"[{dia_nombre} {ahora.strftime('%Y-%m-%d %H:%M:%S')}] Registrado: {temperatura:.2f} °C")
+                hora_am_pm = ahora.strftime("%I:%M:%S %p")
+                print(
+                    formatear_mensaje_log(
+                        dia_semana=dia_nombre,
+                        hora_am_pm=hora_am_pm,
+                        temperatura_celsius=temperatura,
+                        humedad_porcentaje=humedad,
+                    )
+                )
             else:
                 print(f"[Línea no reconocida]: {linea_cruda}")
 
@@ -81,7 +125,7 @@ def iniciar_escucha_serial(
         print("\nCaptura detenida por el usuario.")
     finally:
         conexion.close()
-        print("Puerto serial cerrado.")
+        print("Conexión serial cerrada.")
 
 
 if __name__ == "__main__":

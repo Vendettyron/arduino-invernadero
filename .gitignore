@@ -8,6 +8,7 @@ env/
 __pycache__/
 *.py[cod]
 *$py.class
+build/
 
 # Datos generados (opcional: ignora imágenes pero puede mantener datos si se desea)
 *.png

@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "author": "Proyecto Invernadero",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "top": 40,
+      "left": 20,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-dht22",
+      "id": "sensor_dht",
+      "top": -110,
+      "left": 140,
+      "attrs": {
+        "temperature": "24.5",
+        "humidity": "65"
+      }
+    }
+  ],
+  "connections": [
+    [ "sensor_dht:VCC", "uno:5V", "red", [ "v40", "h-10", "v190", "h45" ] ],
+    [ "sensor_dht:GND", "uno:GND.1", "black", [ "v30", "h-45" ] ],
+    [ "sensor_dht:SDA", "uno:2", "green", [ "v30", "h90" ] ]
+  ],
+  "dependencies": {}
+}

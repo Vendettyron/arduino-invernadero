@@ -1,4 +1,4 @@
-"""Módulo encargado de la gestión y almacenamiento de lecturas reales de temperatura en el CSV."""
+"""Módulo encargado de la gestión y almacenamiento de lecturas reales de temperatura y humedad en el CSV."""
 
 from __future__ import annotations
 
@@ -26,18 +26,18 @@ def asegurar_archivo_csv_con_encabezados(ruta_csv: Path = RUTA_ARCHIVO_CSV) -> N
             escritor.writerow(ENCABEZADOS_CSV)
 
 
-def registrar_lectura_temperatura(
+def registrar_lectura_invernadero(
     temperatura_celsius: float,
+    humedad_porcentaje: float,
     momento_lectura: datetime | None = None,
     dia_semana_personalizado: str | None = None,
     ruta_csv: Path = RUTA_ARCHIVO_CSV,
 ) -> None:
-    """Registra una lectura real de temperatura recibida de Arduino con día, fecha y hora."""
+    """Registra una lectura real de temperatura (°C) y humedad (%) con día, fecha y hora."""
     asegurar_archivo_csv_con_encabezados(ruta_csv)
 
     instante_actual = momento_lectura or datetime.now()
 
-    # Se obtiene el día
     dia_semana = (
         dia_semana_personalizado
         if dia_semana_personalizado
@@ -46,12 +46,24 @@ def registrar_lectura_temperatura(
     fecha_formateada = instante_actual.strftime(FORMATO_FECHA)
     hora_formateada = instante_actual.strftime(FORMATO_HORA)
     temperatura_redondeada = f"{temperatura_celsius:.2f}"
+    humedad_redondeada = f"{humedad_porcentaje:.2f}"
 
-    fila_registro = [dia_semana, fecha_formateada, hora_formateada, temperatura_redondeada]
+    fila_registro = [
+        dia_semana,
+        fecha_formateada,
+        hora_formateada,
+        temperatura_redondeada,
+        humedad_redondeada,
+    ]
 
     with ruta_csv.open(mode="a", newline="", encoding="utf-8") as archivo:
         escritor = csv.writer(archivo)
         escritor.writerow(fila_registro)
+        archivo.flush()
+
+
+# Alias de compatibilidad semántica
+registrar_lectura_temperatura = registrar_lectura_invernadero
 
 
 if __name__ == "__main__":

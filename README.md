@@ -4,10 +4,14 @@ Sistema de adquisición, almacenamiento y visualización gráfica de temperatura
 
 ## 📌 Arquitectura del Proyecto
 
-1. **Arduino (`arduino_invernadero.ino`)**:
-   - Lee el sensor analógico (LM35/TMP36 en el pin `A0`).
+1. **Arduino (`arduino-invernadero.ino`)**:
+   - Lee el sensor digital de la familia DHT (`DHT22` en Wokwi / `DHT11` en hardware físico en el pin digital `2`).
    - Muestreo periódico no bloqueante mediante `millis()` según la constante `INTERVALO_ENVIO_MS`.
    - Transmite los datos por el puerto Serial (`TEMP:XX.XX`).
+
+2. **Simulador Wokwi (`wokwi.toml` y `diagram.json`)**:
+   - Simula un Arduino Uno conectado a un sensor digital `wokwi-dht22` en el pin `2`.
+   - Expone el puerto serie virtual en `rfc2217://localhost:4000` para comunicarse en tiempo real con Python.
 
 2. **Receptor Serial (`lector_serial.py`)**:
    - Escucha las lecturas entrantes por Serial USB.
@@ -48,10 +52,22 @@ source .venv/bin/activate
 python graficador_temperatura.py
 ```
 
-### 3. Capturar datos reales desde Arduino
-1. Conecta tu Arduino por USB.
-2. Abre `configuracion_serial.py` y verifica el nombre del puerto (ej. `/dev/cu.usbmodem...` o `COM3`).
+### 3. Simular con Wokwi y capturar en tiempo real con Python
+1. Si modificas `arduino-invernadero.ino`, vuelve a compilar el firmware:
+   ```bash
+   arduino-cli compile --fqbn arduino:avr:uno --output-dir build/arduino.avr.uno .
+   ```
+2. Abre `diagram.json` en VS Code y presiona **Start Simulation** (botón Play).
+3. Con la simulación corriendo, abre una terminal y ejecuta:
+   ```bash
+   python lector_serial.py
+   ```
+   Verás cómo cada lectura simulada en Wokwi se guarda en `datos/temperaturas_invernadero.csv` en vivo (puedes hacer clic sobre el sensor DHT22 en Wokwi para mover el control deslizante de temperatura y ver cómo cambia).
+
+### 4. Capturar datos reales desde tu Arduino físico (DHT11)
+1. En `arduino-invernadero.ino`, cambia `const uint8_t TIPO_SENSOR_DHT = DHT22;` a `DHT11` y súbelo a tu placa.
+2. En `configuracion_serial.py`, cambia `PUERTO_SERIAL_ARDUINO` al puerto USB de tu Arduino (ej. `/dev/cu.usbmodem...` o `COM3`).
 3. Ejecuta el receptor:
-```bash
-python lector_serial.py
-```
+   ```bash
+   python lector_serial.py
+   ```

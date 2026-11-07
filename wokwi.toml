@@ -1,0 +1,7 @@
+[wokwi]
+version = 1
+firmware = "build/arduino.avr.uno/arduino-invernadero.ino.hex"
+elf = "build/arduino.avr.uno/arduino-invernadero.ino.elf"
+
+# Puerto serie virtual (RFC 2217) para conectar el simulador Wokwi directamente con lector_serial.py en Python
+rfc2217ServerPort = 4000
