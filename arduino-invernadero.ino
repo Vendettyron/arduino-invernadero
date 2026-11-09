@@ -1,34 +1,32 @@
 /*
  * ============================================================================
  * Proyecto: Monitoreo de Temperatura y Humedad para Invernadero
- * Sensor: Familia DHT (DHT22 en simulador Wokwi / DHT11 en hardware físico)
- * Descripción: Lee la temperatura y humedad periódicamente de forma no
- *              bloqueante y muestra el registro semántico en el Monitor Serial.
  * ============================================================================
  */
 
 #include <DHT.h>
 
 // ----------------------------------------------------------------------------
-// Configuración Semántica del Sensor y Pines
+// Configuración Sensor y Pines
 // ----------------------------------------------------------------------------
-const uint8_t PIN_SENSOR_DHT = 2; // Pin digital conectado al pin DATA/SDA del DHT
+const uint8_t PIN_SENSOR_DHT = 2; // Pin digital conectado al pin 'S' (Señal/Datos) del módulo DHT11
 
-// En el simulador Wokwi se usa DHT22.
-// Cuando conectes tu sensor físico DHT11, solo cambia DHT22 por DHT11 aquí:
-const uint8_t TIPO_SENSOR_DHT = DHT22;
+// Configurado para sensor físico DHT11 (módulo de 3 pines: S, +, -)
+const uint8_t TIPO_SENSOR_DHT = DHT11;
 
-// Intervalo parametrizable de muestreo en milisegundos (ejemplo: 5000 ms = 5 s)
+// Intervalo parametrizable de muestreo en milisegundos:
+// - Cada 5 segundos:  5000UL 
+// - Cada 30 minutos: 1800000UL
 const unsigned long INTERVALO_ENVIO_MS = 5000UL;
 
 // Velocidad de comunicación serial
 const unsigned long VELOCIDAD_SERIAL_BAUDIOS = 9600UL;
 
-// Día de la semana parametrizable para el registro en Arduino
-const char* DIA_SEMANA_ACTUAL = "Sabado";
+// Día de la semana parametrizable para el registro inicial en Arduino
+const char* DIA_SEMANA_ACTUAL = "Lunes";
 
 // ----------------------------------------------------------------------------
-// Estructura Semántica de Lectura Ambiental
+// Estructura Lectura Ambiental
 // ----------------------------------------------------------------------------
 struct LecturaAmbiental {
   float temperaturaCelsius;
@@ -37,7 +35,7 @@ struct LecturaAmbiental {
 };
 
 // ----------------------------------------------------------------------------
-// Instancia del Sensor y Reloj Interno Basado en Hora de Compilación
+// Instancia del Sensor
 // ----------------------------------------------------------------------------
 DHT sensorInvernadero(PIN_SENSOR_DHT, TIPO_SENSOR_DHT);
 unsigned long marcaTiempoUltimoEnvio = 0;
@@ -72,10 +70,6 @@ void formatearHoraAmPm(char* bufferSalida, size_t tamanoBuffer) {
   snprintf(bufferSalida, tamanoBuffer, "%02u:%02u:%02u %s", horas12, minutos, segundos, periodo);
 }
 
-// ----------------------------------------------------------------------------
-// Funciones Semánticas de Lectura y Envío
-// ----------------------------------------------------------------------------
-
 /**
  * Solicita temperatura (°C) y humedad relativa (%) al sensor DHT.
  */
@@ -88,9 +82,9 @@ LecturaAmbiental leerCondicionesInvernadero() {
 }
 
 /**
- * Imprime el mensaje personalizado en el Monitor Serial de Wokwi / Arduino.
+ * Imprime el mensaje personalizado en el Monitor Serial del Arduino.
  * Ejemplo:
- * "La temperatura el dia Sabado a las 10:28:05 AM es de 24.50 °C y la humedad esta en: 65.00 %"
+ * "La temperatura el dia Lunes a las 10:28:05 AM es de 24.50 C y la humedad esta en: 65.00 %"
  */
 void enviarLecturaPorSerial(const LecturaAmbiental &lectura) {
   if (!lectura.lecturaValida) {

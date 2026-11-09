@@ -16,7 +16,7 @@ from configuracion import (
 
 
 def asegurar_archivo_csv_con_encabezados(ruta_csv: Path = RUTA_ARCHIVO_CSV) -> None:
-    """Crea el directorio y el archivo CSV con sus encabezados semánticos si no existen."""
+    """Crea el directorio y el archivo CSV con sus encabezados si no existe."""
     ruta_csv.parent.mkdir(parents=True, exist_ok=True)
 
     archivo_existe_y_tiene_contenido = ruta_csv.exists() and ruta_csv.stat().st_size > 0
@@ -61,8 +61,6 @@ def registrar_lectura_invernadero(
         escritor.writerow(fila_registro)
         archivo.flush()
 
-
-# Alias de compatibilidad semántica
 registrar_lectura_temperatura = registrar_lectura_invernadero
 
 

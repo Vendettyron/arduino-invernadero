@@ -1,4 +1,4 @@
-"""Configuración centralizada y constantes semánticas del proyecto de invernadero."""
+"""Configuración centralizada y constantes del proyecto."""
 
 from pathlib import Path
 
@@ -9,7 +9,7 @@ RUTA_ARCHIVO_CSV = DIRECTORIO_DATOS / "temperaturas_invernadero.csv"
 RUTA_GRAFICA_SALIDA = DIRECTORIO_DATOS / "grafica_temperatura.png"
 RUTA_GRAFICA_HUMEDAD = DIRECTORIO_DATOS / "grafica_humedad.png"
 
-# Esquema semántico del archivo CSV
+# Esquema archivo CSV
 COLUMNA_DIA_SEMANA = "dia_semana"
 COLUMNA_FECHA = "fecha"
 COLUMNA_HORA = "hora"
@@ -24,7 +24,7 @@ ENCABEZADOS_CSV = [
     COLUMNA_HUMEDAD,
 ]
 
-# Diccionario de días en español
+# Diccionario de días
 NOMBRES_DIAS_SEMANA = {
     0: "Lunes",
     1: "Martes",
@@ -35,7 +35,7 @@ NOMBRES_DIAS_SEMANA = {
     6: "Domingo",
 }
 
-# Formatos de fecha y hora (formato 12 horas con AM/PM para máxima legibilidad humana)
+# Formatos de fecha y hora
 FORMATO_FECHA = "%Y-%m-%d"
 FORMATO_HORA = "%I:%M:%S %p"
 

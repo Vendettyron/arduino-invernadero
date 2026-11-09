@@ -10,7 +10,7 @@ __pycache__/
 *$py.class
 build/
 
-# Datos generados (opcional: ignora imágenes pero puede mantener datos si se desea)
+# Datos generados 
 *.png
 
 # Archivos del sistema

@@ -1,11 +1,9 @@
-"""Configuración de comunicación Serial (compatible con Wokwi y Arduino físico)."""
+"""Configuración de comunicación Serial con la placa Arduino física."""
 
-# Para usar con el simulador Wokwi en VS Code (gracias a rfc2217ServerPort = 4000 en wokwi.toml):
-PUERTO_SERIAL_ARDUINO = "rfc2217://localhost:4000"
-
-# Cuando conectes tu Arduino físico por USB, comenta la línea de arriba y descomenta la tuya:
-# PUERTO_SERIAL_ARDUINO = "/dev/cu.usbmodem1101"  # Ejemplo en macOS
-# PUERTO_SERIAL_ARDUINO = "COM3"                  # Ejemplo en Windows
+# Puerto asignado al Arduino físico:
+# - En macOS típicamente: "/dev/cu.usbmodem..."
+# - En Windows típicamente: "COM3", "COM4", etc.
+PUERTO_SERIAL_ARDUINO = "/dev/cu.usbmodem21101"
 
 VELOCIDAD_BAUDIOS = 9600
 TIMEOUT_SERIAL_SEGUNDOS = 2.0

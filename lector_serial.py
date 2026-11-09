@@ -1,4 +1,4 @@
-"""Módulo receptor que escucha las lecturas de temperatura y humedad enviadas por Arduino vía Serial y las guarda en el CSV."""
+"""Módulo receptor que escucha las lecturas de temperatura y humedad enviadas por el Arduino físico vía Serial y las guarda en el CSV."""
 
 from __future__ import annotations
 
@@ -17,8 +17,7 @@ from configuracion_serial import (
 )
 from gestor_csv import asegurar_archivo_csv_con_encabezados, registrar_lectura_invernadero
 
-# Expresiones regulares compatibles tanto con el mensaje descriptivo de Arduino
-# ("... es de 24.50 C y la humedad esta en: 65.00 %") como con el formato corto ("TEMP:24.50|HUM:65.00")
+# Expresiones regulares para los logs
 PATRON_TEMPERATURA = re.compile(r"(?:es de|TEMP:?)\s*([+-]?\d+(?:\.\d+)?)", re.IGNORECASE)
 PATRON_HUMEDAD = re.compile(r"(?:humedad esta en:|humedad está en:|HUM:?)\s*([+-]?\d+(?:\.\d+)?)", re.IGNORECASE)
 
@@ -51,13 +50,13 @@ def formatear_mensaje_log(
 
 
 def abrir_conexion_serial(
-    puerto_o_url: str,
+    puerto: str,
     baudios: int,
     timeout: float,
 ) -> serial.SerialBase:
-    """Abre una conexión serial tanto para URLs virtuales (Wokwi rfc2217://) como puertos USB físicos."""
+    """Abre una conexión serial con el puerto USB del Arduino."""
     return serial.serial_for_url(
-        url=puerto_o_url,
+        url=puerto,
         baudrate=baudios,
         timeout=timeout,
     )
@@ -73,14 +72,10 @@ def iniciar_escucha_serial(
 
     print(f"Conectando a '{puerto}' ({baudios} baudios)...")
     try:
-        conexion = abrir_conexion_serial(puerto_o_url=puerto, baudios=baudios, timeout=timeout)
+        conexion = abrir_conexion_serial(puerto=puerto, baudios=baudios, timeout=timeout)
     except serial.SerialException as error:
-        print(f"\nError al conectar con Arduino/Wokwi: {error}")
-        print(
-            "Sugerencia:\n"
-            "  1. Si usas Wokwi, asegúrate de que la simulación esté en ejecución (Play) en VS Code.\n"
-            "  2. Si usas un Arduino físico, actualiza PUERTO_SERIAL_ARDUINO en 'configuracion_serial.py'."
-        )
+        print(f"\nError al conectar con Arduino: {error}")
+        print("Sugerencia: Revisa en 'configuracion_serial.py' si el puerto COM / USB asignado es el correcto.")
         sys.exit(1)
 
     print("Conexión establecida. Esperando lecturas del sensor DHT...")
